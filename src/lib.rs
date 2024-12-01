@@ -1,5 +1,3 @@
-use std::ops::Neg;
-
 use aoc_runner_derive::*;
 
 #[aoc_generator(day1)]
@@ -19,11 +17,11 @@ pub fn generate_lists(input: &str) -> (Vec<isize>, Vec<isize>) {
 
     for (n1, n2) in lines {
         list1.push(n1);
-        list1.sort_unstable();
-
         list2.push(n2);
-        list2.sort_unstable();
     }
+
+    list1.sort_unstable();
+    list2.sort_unstable();
 
     (list1, list2)
 }
