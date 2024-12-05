@@ -3,10 +3,10 @@ use std::{cmp::Ordering, num::{NonZero, NonZeroUsize}, ops::Rem};
 use aoc_runner_derive::{aoc, aoc_generator};
 
 // My particular input has reports no larger than eight entries.
-const REPORT_MAX_SIZE: usize = 5;
+const REPORT_MAX_SIZE: usize = 8;
 
 // My input *also* only has 1000 entries in it!
-const INPUT_LINE_COUNT: usize = 6;
+const INPUT_LINE_COUNT: usize = 1000;
 
 //const TOTAL_ELEM: usize = INPUT_LINE_COUNT * REPORT_MAX_SIZE;
 
@@ -17,9 +17,16 @@ type Grid = [Report; INPUT_LINE_COUNT];
 
 #[aoc_generator(day2)]
 fn parse(input: &str) -> Grid {
-    let iter = input.split_whitespace()
+    let iter = input.lines()
         .enumerate()
-        .map(|(idx, n)| (idx, n.parse::<usize>().unwrap()));
+        .map(|(line_idx, line)| {
+            line.split_whitespace()
+                .enumerate()
+                .map(move |(lvl_idx, n)| {
+                    (line_idx, lvl_idx, n.parse::<usize>().unwrap())
+                })
+            })
+        .flatten();
 
     let mut grid = {
         use core::array::from_fn;
@@ -27,10 +34,8 @@ fn parse(input: &str) -> Grid {
         from_fn::<_, INPUT_LINE_COUNT, _>(|_| init_rep())
     };
 
-    for (id, value) in iter {
-        let report = id.div_euclid(REPORT_MAX_SIZE);
-        let level = id.rem(REPORT_MAX_SIZE);
-        grid[report][level] = NonZeroUsize::new(value);
+    for (line_idx, lvl_idx, value) in iter {
+        grid[line_idx][lvl_idx] = NonZeroUsize::new(value);
     }
 
     grid
@@ -60,14 +65,26 @@ fn is_report_safe(report: &Report) -> bool {
         prev_slope: &mut Option<Ordering>,
         &[a, b]: &[Level; 2]
     ) -> Option<bool> {
-        let cur_slope = b.cmp(&a);
+        // If there are no values to compare, we've reached the end of a report.
+        if a.is_none() && b.is_none() {
+            return Some(true)
+        }
+
+        let cur_slope = match (b, a) {
+            (None, None) => Some(Ordering::Equal),
+            (None, Some(_)) => *prev_slope,
+            (Some(_), None) => *prev_slope,
+            (Some(b), Some(a)) => Some(b.cmp(&a)),
+        };
 
         // `prev_slope` is only `None` on the very first comparison for a report.
         let mut is_safe = if prev_slope.is_some() {
             // Checks to make sure `prev_slope` is still either increasing or decreasing.
             // Checking if `cur_slope` is equal to the `prev_slope`.
             eprintln!("({a:?}, {b:?}) slope {cur_slope:?} to {prev_slope:?}");
-            prev_slope.is_some_and(|s| s.eq(&cur_slope) && s.ne(&Ordering::Equal))
+            prev_slope.zip(cur_slope).is_some_and(|(p, c)| {
+                p.eq(&c) && p.ne(&Ordering::Equal)
+            })
         } else {
             eprintln!("({a:?}, {b:?}) slope {cur_slope:?}");
             // Return true if this is the first slope comparison (level is automatically safe)
@@ -76,7 +93,7 @@ fn is_report_safe(report: &Report) -> bool {
 
         if !is_safe {
             // Short-circuit if the above comparison failed.
-            return Some(false);
+            return Some(false)
         }
 
         // Checks if the adjacent level is within the limit of absolute difference [1, 3]
@@ -93,7 +110,7 @@ fn is_report_safe(report: &Report) -> bool {
             true
         };
 
-        *prev_slope = Some(cur_slope);
+        *prev_slope = cur_slope;
         Some(is_safe)
     }
 
