@@ -1,4 +1,4 @@
-use std::{cmp::Ordering, num::{NonZero, NonZeroUsize}, ops::Rem};
+use std::{cmp::Ordering, num::{NonZero, NonZeroUsize}};
 
 use aoc_runner_derive::{aoc, aoc_generator};
 
