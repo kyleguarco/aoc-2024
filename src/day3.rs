@@ -27,4 +27,4 @@ fn part1(input: &[(usize, usize)]) -> usize {
 }
 
 #[aoc(day3, part2)]
-fn part2(input: &[(usize, usize)]) -> usize { todo!() }
+fn part2(_input: &[(usize, usize)]) -> usize { todo!() }
