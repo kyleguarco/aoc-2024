@@ -18,15 +18,21 @@ fn part1(grid: &Grid) -> usize {
     let mut matches = 0usize;
 
     std::thread::scope(|scope| {
-        let mut handles = Vec::with_capacity(1000);
-
         for (y, line) in grid.rows.iter().enumerate() {
             for (x, c) in line.iter().enumerate() {
+                // If the current character isn't an 'X', loop again!
+                // We don't care about any other letters.
                 if c != &'X' {
                     continue;
                 }
 
-                for dir in [
+                // A collection of scoped thread handles. When the loop below exits,
+                // we join the eight threads below and check their return value.
+                let mut handles = [const { None }; 8];
+
+                // Search for the remaining letters of "XMAS" ('MAS' since we already checked for 'X').
+                // Spawn threads that search in the eight cardinal directions to speed things up.
+                for (dir, handle) in [
                     Spot::north,
                     Spot::north_east,
                     Spot::east,
@@ -35,8 +41,11 @@ fn part1(grid: &Grid) -> usize {
                     Spot::south_west,
                     Spot::west,
                     Spot::north_west,
-                ] {
-                    handles.push(scope.spawn(move || {
+                ]
+                .iter()
+                .zip(handles.iter_mut())
+                {
+                    let prev = handle.replace(scope.spawn(move || {
                         let mut spot = grid.spot_at(x, y).unwrap();
 
                         // The 'X' is skipped, since checking for the 'X' is what starts this thread.
@@ -60,12 +69,16 @@ fn part1(grid: &Grid) -> usize {
                         // past the border of the word search grid.
                         check.is_some_and(|s| s.is_empty())
                     }));
+                    assert!(prev.is_none());
+                }
+
+                for handle in &mut handles {
+                    let Some(handle) = handle.take() else {
+                        continue;
+                    };
+                    matches += handle.join().unwrap_or(false) as usize;
                 }
             }
-        }
-
-        for handle in handles {
-            matches += handle.join().unwrap_or(false) as usize;
         }
     });
 
@@ -181,7 +194,7 @@ impl Grid {
         Some(Spot {
             grid: self,
             loc: Pos::new(x, y),
-            value: value,
+            value,
         })
     }
 }
