@@ -4,13 +4,16 @@ use aoc_runner_derive::{aoc, aoc_generator};
 
 #[aoc_generator(day5)]
 fn parse(input: &str) -> (Vec<Rule>, Vec<Update>) {
+    /// The input for day five has two sections. `ParseState` describes those two
+    /// states better than a `bool` ever would.
     enum ParseState {
         Rule,
         Update,
     }
     let mut state = ParseState::Rule;
 
-    let (mut rules, mut updates) = (Vec::new(), Vec::new());
+    let mut rules = Vec::with_capacity(1000);
+    let mut updates = Vec::with_capacity(100);
     for line in input.lines() {
         if line.is_empty() {
             state = ParseState::Update;
@@ -88,13 +91,13 @@ fn parse_update(input: &str) -> Option<Update> {
 struct PageOrdering(HashMap<Page, Vec<Page>>);
 
 fn determine_ordering(rules: &[Rule]) -> PageOrdering {
-    let mut ordering = HashMap::with_capacity(rules.len());
+    let mut ordering = HashMap::new();
 
     for rule in rules {
         let page_order = ordering.get_mut(&rule.0);
 
         if page_order.is_none() {
-            let mut pages = Vec::with_capacity(rules.len());
+            let mut pages = Vec::new();
             pages.push(rule.1);
             ordering.insert(rule.0, pages);
             continue;
